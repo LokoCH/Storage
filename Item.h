@@ -3,31 +3,40 @@
 
 #include<string>
 #include<iostream>
+#include<vector>
+
+class Item;
+// Структура склада, содержащая название(например "Теплый склад") и вектор однотипных товаров
+struct Storage
+{
+	std::string name{ "" };
+	std::vector<Item*>items;
+};
 
 class Item
 {
 public:
-	Item(std::string name, double cost);
+	Item(std::string name, double cost, Storage* store);
 	~Item();
 	Item(Item& other);
-	Item(Item&& other);
+	Item(Item&& other)noexcept;
 
-	void setName(std::string name)
+	virtual void setName(std::string name)
 	{
 		m_name = name;
 	}
 
-	std::string getName()
+	virtual std::string getName()
 	{
 		return m_name;
 	}
 
-	void setCost(double cost)
+	virtual void setCost(double cost)
 	{
 		m_cost = cost;
 	}
 
-	double getCost()
+	virtual double getCost()
 	{
 		return m_cost;
 	}
@@ -37,15 +46,18 @@ public:
 
 	virtual void showInfo() = 0;
 
+	Storage* getStore()const { return store; }
+
 protected:
 	std::string m_name;
 	double m_cost;
+	Storage* store;
 };
 
 class Ball :public Item
 {
 public:
-	Ball(std::string name, double cost, int radius, std::string material) :Item(name, cost), m_radius{ radius }, material{ material } {}
+	Ball(std::string name, double cost, Storage* store, int radius, std::string material) :Item(name, cost, store), m_radius{ radius }, material{ material } {}
 
 	std::string getSize() override
 	{
@@ -74,7 +86,7 @@ private:
 class TV : public Item
 {
 public:
-	TV(std::string name, double cost, int length, int width, int heigth, std::string screen) : Item(name, cost),
+	TV(std::string name, double cost, Storage* store, int length, int width, int heigth, std::string screen) : Item(name, cost, store),
 		m_length{ length },
 		m_width{ width },
 		m_height{ heigth },
@@ -109,7 +121,7 @@ private:
 class Sugar : public Item
 {
 public:
-	Sugar(std::string name, double cost, int weight) :Item(name, cost), m_weight{ weight } {}
+	Sugar(std::string name, double cost, Storage* store, int weight) :Item(name, cost, store), m_weight{ weight } {}
 
 	std::string getSize() override
 	{
@@ -131,6 +143,55 @@ public:
 
 private:
 	int m_weight; // вес
+};
+
+class Compound :public Item
+{
+public:
+	Compound() :Item("Компоновщик", 0, nullptr), vol{ 0 } {}
+
+	void add(Item* item)
+	{
+		items.push_back(item);
+		m_cost += item->getCost();
+		vol += item->getVol();
+	}
+	void remove()
+	{
+		m_cost -= items.back()->getCost();
+		vol -= items.back()->getVol();
+		items.pop_back();
+	}
+
+	std::vector<Item*>& getItems()
+	{
+		return items;
+	}
+
+
+	double getCost() override
+	{
+		return m_cost;
+	}
+
+	std::string getSize()override
+	{
+		return std::to_string(items.size());
+	}
+
+	double getVol()override
+	{
+		return vol;
+	}
+
+	void showInfo() override
+	{
+		std::cout << "Всего мест" << items.size() << "\n";
+		std::cout << "Цена: " << m_cost << "\n";
+	}
+private:
+	std::vector<Item*>items;
+	double vol;
 };
 
 #endif //!ITEM_H

@@ -1,0 +1,6 @@
+﻿  main.cpp
+C:\Users\lokoc\Desktop\MyStat\C++\Storage\Storage\main.cpp(26,23): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\lokoc\Desktop\MyStat\C++\Storage\Storage\main.cpp(32,23): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\lokoc\Desktop\MyStat\C++\Storage\Storage\main.cpp(38,23): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\lokoc\Desktop\MyStat\C++\Storage\Storage\main.cpp(101,24): warning C4018: <: несоответствие типов со знаком и без знака
+  Storage.vcxproj -> C:\Users\lokoc\Desktop\MyStat\C++\Storage\Debug\Storage.exe

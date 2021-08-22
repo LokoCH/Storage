@@ -8,19 +8,14 @@
 // переменная для генерирования id машины
 int Car::countId = 0;
 
-// Структура склада, содержащая название(например "Теплый склад") и вектор однотипных товаров
-struct Storage
-{
-	std::string name{ "" };
-	std::vector<Item*>items;
-};
-
 //////////////////////////// Prototypes
 void MainMenu(); // функция выводящая главное меню на экран
 int Selected(int n); // функция проверяющая и возвращающая выбор пользователя
 void MakeStorages(Storage& storage1, Storage& storage2, Storage& storage3);
 void LoadCar(std::vector<Car*>& park, std::vector<Storage*>& storages);
 void ReloadCar(std::vector<Car*>& park, std::vector<Storage*>& storages);
+
+
 ///////////////////////////////
 
 // Заполняем склады товарами (для теста)
@@ -30,19 +25,19 @@ void MakeStorages(Storage& storage1, Storage& storage2, Storage& storage3)
 	// мячи
 	for (size_t i = 0; i < count; i++)
 	{
-		storage1.items.push_back(new Ball("Футбольный мяч", 3000, 15, "Кожа"));
+		storage1.items.push_back(new Ball("Футбольный мяч", 3000, &storage1, 15, "Кожа"));
 	}
 
 	// телевизоры
 	for (size_t i = 0; i < count; i++)
 	{
-		storage2.items.push_back(new TV("Телевизор Sony", 25000, 110, 20, 60, "LED"));
+		storage2.items.push_back(new TV("Телевизор Sony", 25000, &storage2, 110, 20, 60, "LED"));
 	}
 
 	// сахар
 	for (size_t i = 0; i < count; i++)
 	{
-		storage3.items.push_back(new Sugar("Сахар", 750, 15));
+		storage3.items.push_back(new Sugar("Сахар", 750, &storage3, 15));
 	}
 }
 
@@ -71,34 +66,56 @@ int Selected(int n) // n - количество вариантов выбора в меню
 
 void LoadCar(std::vector<Car*>& park, std::vector<Storage*>& storages)
 {
+	Compound* newCompaund = new Compound();
 
-	system("cls");
-	std::cout << "Выберите склад, с которого будет производиться погрузка\n";
-
-	// Выводим список складов
-	int n = 0;
-	for (auto& storage : storages)
+	while (true)
 	{
-		++n;
-		std::cout << n << " - " << storage->name << "\n";
+		system("cls");
+		std::cout << "Выберите склад, с которого будет производиться погрузка\n";
+
+		// Выводим список складов
+		int n = 0;
+		for (auto& storage : storages)
+		{
+			++n;
+			std::cout << n << " - " << storage->name << "\n";
+		}
+		std::cout << "0 - Отмена\n>";
+		int selStorage = Selected(n + 1);
+		if (!selStorage)
+			return;
+
+		// Если склад пуст, выходим
+		if (storages[selStorage - 1]->items.empty())
+		{
+			std::cout << "Склад пуст\n";
+			std::cin.get();
+			return;
+		}
+
+		std::cout << storages[selStorage - 1]->items[0]->getName() << " " << storages[selStorage - 1]->items.size() << "\n";
+
+		std::cout << "Количество для погрузки: ";
+		int count = Selected(storages[selStorage - 1]->items.size() + 1);
+
+		for (size_t i = 0; i < count; i++)
+		{
+			newCompaund->add(storages[selStorage - 1]->items.back());
+			storages[selStorage - 1]->items.pop_back();
+		}
+
+		std::cout << "Добавить еще товары?(y/n)\n>";
+		char yn;
+		while (!(std::cin.get(yn)) || (yn != 'y' && yn != 'n'))
+		{
+			std::cin.clear();
+			std::cin.ignore(32767, '\n');
+			std::cout << "Введите y или n\n>";
+		}
+		if (yn == 'n')
+			break;
 	}
-	std::cout << "0 - Отмена\n>";
-	int selStorage = Selected(n + 1);
-	if (!selStorage)
-		return;
 
-	// Если склад пуст, выходим
-	if (storages[selStorage - 1]->items.empty())
-	{
-		std::cout << "Склад пуст\n";
-		std::cin.get();
-		return;
-	}
-
-	std::cout << storages[selStorage - 1]->items[0]->getName() << " " << storages[selStorage - 1]->items.size() << "\n";
-
-	std::cout << "Количество для погрузки: ";
-	int count = Selected(storages[selStorage - 1]->items.size() + 1);
 
 	system("cls");
 	std::cout << "Выберите машину:\n";
@@ -114,16 +131,23 @@ void LoadCar(std::vector<Car*>& park, std::vector<Storage*>& storages)
 		return;
 
 	int countLoaded = 0; // счетчик загруженных товаров
-	double sum = 0; // стоимость погруженного товара
-	for (size_t i = 0; i < count; i++)
+	double sum = 0;      // стоимость погруженного товара
+	while (atoi(newCompaund->getSize().c_str()))
 	{
-		auto& temp = storages[selStorage - 1]->items.back();
+		auto& temp = newCompaund->getItems().back();
 		if (!park[selCar - 1]->put(temp))
 			break;
 		sum += temp->getCost();
-		storages[selStorage - 1]->items.pop_back();
+		newCompaund->remove();
 		++countLoaded;
 	}
+
+	///////////////////// Товар, который не поместился в машину, выгружаем обратно на склад///////////////////////
+	for (size_t i = 0; i < newCompaund->getItems().size(); i++)
+	{
+		newCompaund->getItems()[i]->getStore()->items.push_back(newCompaund->getItems()[i]);
+	}
+
 
 	std::cout << "Загружено " << countLoaded << " единиц товара на сумму " << sum << "руб.\n";
 	std::cout << "Машина " << park[selCar - 1]->getId() << " загружена на " << park[selCar - 1]->getVolume() << " из " << park[selCar - 1]->getCapacity() << "\n";
@@ -162,7 +186,13 @@ void ReloadCar(std::vector<Car*>& park, std::vector<Storage*>& storages)
 	{
 		for (auto temp = park[selCar - 1]->get(); temp; temp = park[selCar - 1]->get())
 		{
-			if (typeid(*temp) == typeid(Ball))
+			if (!temp->getStore())
+				++nFalse;
+
+			temp->getStore()->items.push_back(temp);
+			++nTrue;
+			sum += temp->getCost();
+			/*if (typeid(*temp) == typeid(Ball))
 			{
 				storages[0]->items.push_back(temp);
 				nTrue++;
@@ -181,7 +211,7 @@ void ReloadCar(std::vector<Car*>& park, std::vector<Storage*>& storages)
 				sum += temp->getCost();
 			}
 			else
-				nFalse++;
+				nFalse++;*/
 		}
 	}
 
